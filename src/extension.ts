@@ -1,7 +1,7 @@
 'use strict';
 import * as gemfile from 'gemfile';
 import * as vscode from 'vscode';
-import * as https from 'https';
+import {fetchGemData, GemData} from './rubygemsApi';
 
 // Exports.deactivate = exports.activate = void 0;
 
@@ -21,19 +21,6 @@ const wordsToIgnore = [
 /*
 ** Types
 */
-
-type GemInfo = {
-	title: string;
-	isLink: boolean;
-	content: string;
-};
-
-type GemData = {
-	version: string;
-	endpoint: string;
-	lastAvailableVersion: string;
-	infos: GemInfo[];
-};
 
 type GemsData = Record<string, GemData>;
 
@@ -88,15 +75,14 @@ class GemfileProvider implements vscode.HoverProvider {
 			return;
 		}
 
-		return new Promise((resolve: (value: vscode.Hover) => void) => {
-			fetchOnlineData(gemName, cacheKey, 3, () => {
-				gemData = gemfileCache.gemsData[gemName];
-				infobulleStr = formatInfobulleData(gemData);
+		return (async () => {
+			await fetchOnlineData(gemName, cacheKey);
+			gemData = gemfileCache.gemsData[gemName];
+			infobulleStr = formatInfobulleData(gemData);
 
-				const doc = new vscode.MarkdownString(infobulleStr);
-				resolve(new vscode.Hover(doc, gemRange));
-			});
-		});
+			const doc = new vscode.MarkdownString(infobulleStr);
+			return new vscode.Hover(doc, gemRange);
+		})();
 	}
 }
 
@@ -104,80 +90,17 @@ class GemfileProvider implements vscode.HoverProvider {
 ** Retrieve and populate Data from the web
 */
 
-function fetchOnlineData(gemName: string, cacheKey: string, retry_left: number, resolve: () => any) {
-	if (retry_left <= 0) {
-		return;
-	}
-
+async function fetchOnlineData(gemName: string, cacheKey: string): Promise<void> {
 	const gemfileCache = cache.get(cacheKey);
 	const {version} = gemfileCache.lockedVersions[gemName];
 	const {provider} = gemfileCache;
-	const endpoint = `${provider}gems/${gemName}/versions/${version}`;
 
-	https.get(endpoint, response => {
-		response.setEncoding('utf8');
-
-		if (response.statusCode !== 200) {
-			setTimeout(() => {
-				fetchOnlineData(gemName, cacheKey, retry_left--, resolve);
-			}, 1000);
-			return;
-		}
-
-		const chunks = [];
-		response.on('data', data => chunks.push(data));
-		response.on('end', () => {
-			parseDataAndPushToCache(gemName, cacheKey, endpoint, chunks.join(''));
-			resolve();
-		});
-	});
-}
-
-function parseDataAndPushToCache(gemName: string, cacheKey: string, endpoint: string, htmlPage: string) {
-	const gemfileCache = cache.get(cacheKey);
-	const gemData: GemData = {
-		version: gemfileCache.lockedVersions[gemName].version,
-		lastAvailableVersion: '',
-		endpoint,
-		infos: [],
-	};
-
-	gemfileCache.gemsData[gemName] = gemData;
-
-	// Add Last Update info
-	const lastUpdateDate = (/ class="gem__version__date">(.*)<\//.exec(htmlPage))[1];
-	const lastVersion = (/ class="gem__version-wrap">\n(?: )*<a class.*>(.*)<\/a>/.exec(htmlPage))[1];
-	const versionData: GemInfo = {
-		title: 'Last update',
-		isLink: false,
-		content: `${lastUpdateDate} (${lastVersion})`,
-	};
-	gemData.infos.push(versionData);
-	gemData.lastAvailableVersion = lastVersion;
-
-	// Add useful Links infos
-	[{
-		htmlId: 'home',
-		target: 'Homepage',
-	}, {
-		htmlId: 'changelog',
-		target: 'Changelog',
-	}, {
-		htmlId: 'code',
-		target: 'Repo',
-	}].forEach(({htmlId, target}) => {
-		const regexp = new RegExp(` id="${htmlId}" href="(.*)"`, 'i');
-		const aTagHref = htmlPage.match(regexp);
-
-		if (aTagHref?.[1]) {
-			const data: GemInfo = {
-				title: target,
-				isLink: true,
-				content: aTagHref[1],
-			};
-			gemData.infos.push(data);
-		}
-	});
+	try {
+		const gemData = await fetchGemData(provider, gemName, version);
+		gemfileCache.gemsData[gemName] = gemData;
+	} catch (error) {
+		console.error(`Error while fetching gem data for ${gemName}`, error);
+	}
 }
 
 /*

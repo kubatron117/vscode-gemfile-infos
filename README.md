@@ -7,6 +7,12 @@ This is a fork of [bung87/vscode-gemfile](https://github.com/bung87/vscode-gemfi
 ![preview](https://raw.githubusercontent.com/ngouy/vscode-gemfile-infos/main/preview.png)
 
 ## Release Notes
+### 0.5.8
+- Fix hover data no longer loading after rubygems.org redesigned their site (the extension was scraping HTML that no longer matches)
+- Switch from HTML scraping to the official RubyGems API (`api/v1/gems/{name}.json`) for version, last update date and links
+- Fix wrong "last update" date shown for some gems (was falling back to a `1980-01-01` placeholder from RubyGems' version history)
+- Faster hover: a single API call instead of scraping a full HTML page
+- Added automated tests for the RubyGems API integration
 ### 0.5.7
 - Update Tags (marketplace "SEO")
 ### 0.5.6
