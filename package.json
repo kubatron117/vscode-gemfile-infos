@@ -1,14 +1,14 @@
 {
-	"name": "vscode-gemfile-infos",
-	"displayName": "vscode-gemfile-infos",
-	"description": "Provide useful information on 'hover' of a gem in your Gemfile",
-	"version": "0.5.8",
-	"publisher": "ngouy",
+	"name": "gemfile-insights",
+	"displayName": "Gemfile Insights",
+	"description": "Gem version, update, and link insights on hover in your Gemfile, powered by the RubyGems API.",
+	"version": "1.0.0",
+	"publisher": "jacky32",
 	"engines": {
 		"vscode": "^1.43.0"
 	},
 	"repository": {
-		"url": "https://github.com/ngouy/vscode-gemfile-infos"
+		"url": "https://github.com/kubatron117/vscode-gemfile-infos"
 	},
 	"icon": "Gemfile.png",
 	"categories": [
@@ -55,19 +55,9 @@
 	"dependencies": {
 		"gemfile": "^1.1.0"
 	},
-	"__metadata": {
-		"publisherDisplayName": "ngouy",
-		"isApplicationScoped": false,
-		"updated": true,
-		"isPreReleaseVersion": false,
-		"preRelease": false,
-		"id": "6f742ed1-f17f-41ce-bb45-b06ce1379727",
-		"publisherId": "81cc22b4-e7c2-69ea-97be-fc888c17a2da",
-		"targetPlatform": "undefined"
-	},
 	"contributes": {
 		"configuration": {
-			"title": "Gemfile Infos",
+			"title": "Gemfile Insights",
 			"properties": {
 				"vscodeGemfileInfo.showCurrentVersion": {
 					"type": "boolean",
